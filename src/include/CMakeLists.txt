@@ -1,0 +1,6 @@
+add_subdirectory(GameCore)
+add_subdirectory(Managers)
+add_subdirectory(Menu)
+add_subdirectory(Puzzle)
+add_subdirectory(Utils)
+set(HEADERS ${HEADERS} PARENT_SCOPE)

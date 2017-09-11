@@ -1,0 +1,14 @@
+<MainMenu id="0" px="25" py="45" sx="230" sy="260" img="Menu/MainMenu.png">
+	<FunctionButton px="40" py="60" sx="200" sy="50" img="Menu/MainButtons.png" clickable="1" id="1">Indítás</FunctionButton>
+	<MenuButton px="40" py="150" sx="200" sy="50" img="Menu/MainButtons.png" clickable="1" owr="0" name="Beállítások">
+		<Menu px="275" py="135" sx="230" sy="260" img="Menu/MainMenu.png">
+			<FunctionButton px="290" py="150" sx="200" sy="50" img="Menu/MainButtons.png" clickable="0" id="2">Audio</FunctionButton>
+			<FunctionButton px="290" py="240" sx="200" sy="50" img="Menu/MainButtons.png" clickable="0" id="3">Video</FunctionButton>
+			<BackButton px="290" py="330" sx="200" sy="50" img="Menu/MainButtons.png" clickable="1" owr="0">Vissza</BackButton>
+		</Menu>
+	</MenuButton>
+	<FunctionButton px="40" py="240" sx="200" sy="50" img="Menu/MainButtons.png" clickable="1" id="4">Kilépés</FunctionButton>
+</MainMenu>
+<UIMenu id="1" px="0" py="0" sx="1366" sy="768" img="Menu/UI.png">
+	<FunctionButton px="5" py="15" sx="200" sy="50" img="Menu/MainButtons.png" clickable="1" id="5">Save Map</FunctionButton> 
+</UIMenu>
