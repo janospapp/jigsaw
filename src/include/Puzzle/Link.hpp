@@ -12,11 +12,7 @@ public:
 	Link(const U16 id);
 	
 	void addPiece(std::unique_ptr<Piece> &&piece);
-	//void move(const sf::Vector2f &offset);
-	//void rotateRight(const sf::Vector2f &around);
-	//void render(sf::RenderWindow &screen) const;
-	//bool isInside(const sf::Vector2f &pt) const;
-	std::unordered_set<Piece *> getPieces() const;
+    std::unordered_set<Piece *> getPieces() const;
 	void merge(Link &link);
 	U16 getSize() const;
 	U16 getId() const;

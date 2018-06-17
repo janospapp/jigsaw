@@ -76,7 +76,7 @@ void Curve::reversePoints()
 std::vector<sf::Vector2f> Curve::getPoints() const
 {
     //return getParts(maxLength() / 5.f);
-    return getParts(3);
+    return getParts(5);
 }
 
 

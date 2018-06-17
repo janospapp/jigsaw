@@ -1,18 +1,15 @@
 #ifndef GAMEAPP_HPP
 #define GAMEAPP_HPP
 #include "GameCore/GameClock.hpp"
+#include "Puzzle/Piece.hpp"
 #include "SFML/Graphics.hpp"
 #include <stack>
 #include <memory>
 
 static struct TO
 {
-	static int mapTileX;	//Width of a map tile in pixels
-	static int mapTileY;	//Height of a map tile in pixels
 	static int frameTime;	//How long is one frame.
 	static int maxRenderSkip;	//How many rendering can I skip maximum.
-    static std::string pictureToSolve;  //The path for the picture.
-    static float pieceSize;   //How big a piece should be.
 
     void load();
 } TempOptions;
@@ -36,13 +33,14 @@ public:
         float fScaleX;
         float fScaleY;
 		float fScrollSpeed;
-        bool _showBorder;
+        std::string _defaultDirectory;
+        BorderRenderingMode _showBorder;
 		
         void loadOptions();
         void saveOptions();
 	};
 
-    static void InitializeGame();
+    static void initializeGame();
 	//I need to start the loop with a non empty state stack, because the loop runs until the stack becomes empty. So if it's empty at the
 	//beginning, the loop will immediately quit.
     static void Gameloop();

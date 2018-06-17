@@ -13,9 +13,9 @@
 namespace PuzzleManager
 {
     //Implement these later
-    void loadPuzzle(const std::string &name);
+    void loadPuzzle();
     void savePuzzle();
-    void createPuzzle();
+    void createPuzzle(const std::string &filePath_,const std::string &name_, const int pieceNum_);
     void destroy();
 
     // Get the pieces in bottom-up order for rendering. (We draw the top most for last.)
@@ -23,10 +23,23 @@ namespace PuzzleManager
 
     // Get the piece link under the mouse position and add it to the selection. The InputManager
     // will handle the selection, moving etc. We just add the corresponding pieces here.
-    void addPiecesToSelection(sf::Vector2f &mousePos_, std::unordered_set<Piece *> &selection_);
+    // Returns whether any piece was added to the selection or not.
+    bool addPiecesToSelection(sf::Vector2f &mousePos_, std::unordered_set<Piece *> &selection_);
+    void selectEdgePieces(std::unordered_set<Piece *> &selection_);
 
     // This will put down the pieces, checking the matchings and clear the selection.
     void putDownPieces(std::unordered_set<Piece *> &selection_);
+
+    U16 getPieceNumber();
+
+    CurvyEdge getBaseCurvyEdge(const bool scale_);
+    LineEdge getBaseLineEdge(const bool scale_);
+
+    const sf::FloatRect& getPlayArea();
+    void updatePlayArea(const bool reset_ = false);
+
+    extern U16 _pieceSize;
+    extern std::vector<sf::Color> _colors;
 }
 
 #endif

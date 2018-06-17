@@ -25,19 +25,16 @@ void Line::addVertices(std::vector<sf::Vertex> &vertexVec_) const
 }
 
 
-void Line::render(sf::RenderTarget &screen_)
+void Line::render(SpriteBatch &spBatch_)
 {
-    sf::Vertex points[4];
-    sf::Vector2f angular = _end - _start;
-    // Normalize the vector.
-    angular /= vectorDist(_end, _start);
-    sf::Vector2f perpendicular(angular.y, -angular.x);
-    perpendicular *= _thickness/2.0f;
+    std::vector<sf::Vertex> points;
+    addVertices(points);
+    spBatch_.draw(points);
+}
 
-    points[0] = sf::Vertex(_start + perpendicular,_color);
-    points[1] = sf::Vertex(_end + perpendicular,_color);
-    points[2] = sf::Vertex(_end - perpendicular,_color);
-    points[3] = sf::Vertex(_start - perpendicular,_color);
-
-    screen_.draw(points,4,sf::PrimitiveType::Quads);
+void Line::render(sf::RenderTarget &target_)
+{
+    std::vector<sf::Vertex> points;
+    addVertices(points);
+    target_.draw(&points[0], 4, sf::Quads);
 }

@@ -19,6 +19,9 @@ namespace InputManager
     // When left mouse button is pressed or released.
     void gameLeftClick();
     void gameLeftReleased();
+    void gameRightClick();
+
+    void selectEdgePieces();
 
     void gameMouseWheel(int delta);
 

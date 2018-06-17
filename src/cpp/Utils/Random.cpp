@@ -1,13 +1,12 @@
 #include "Utils/Random.hpp"
-#include "GameCore/GameApp.hpp"
 #include <ctime>
 
 
-void Random::initialize()
+void Random::initialize(sf::Vector2f xLimit_, sf::Vector2f yLimit_)
 {
 	_generator.seed(time(NULL));
-	_pixelGeneratorX.param(std::uniform_real_distribution<float>::param_type(0.f,(float)GameApp::Options.iScreenWidth));
-	_pixelGeneratorY.param(std::uniform_real_distribution<float>::param_type(0.f,(float)GameApp::Options.iScreenHeight));
+    _pixelGeneratorX.param(std::uniform_real_distribution<float>::param_type(xLimit_.x,xLimit_.y));
+    _pixelGeneratorY.param(std::uniform_real_distribution<float>::param_type(yLimit_.x,yLimit_.y));
 }
 
 

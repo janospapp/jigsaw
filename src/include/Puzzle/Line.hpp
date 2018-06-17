@@ -2,13 +2,15 @@
 #define LINE_HPP
 
 #include "SFML/Graphics.hpp"
+#include "Utils/SpriteBatch.hpp"
 
 class Line
 {
 public:
     Line(sf::Vector2f start_, sf::Vector2f end_, sf::Color color_, float thickness_ = 1.0f);
 
-    void render(sf::RenderTarget &screen_);
+    void render(SpriteBatch &spBatch_);
+    void render(sf::RenderTarget &target_);
     void addVertices(std::vector<sf::Vertex> &vertexVec_) const;
 
 private:

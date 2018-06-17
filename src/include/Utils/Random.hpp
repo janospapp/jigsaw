@@ -8,7 +8,7 @@
 class Random
 {
 public:
-	static void initialize();
+    static void initialize(sf::Vector2f xLimit_, sf::Vector2f yLimit_);
 	static sf::Vector2f randomPixel();	//Always generate a random pixel on the screen.
 
 private:

@@ -6,8 +6,17 @@ set sfml_dir=C:\dev\tools\lib\SFML
 set tgui_dir=C:\dev\tools\lib\TGUI
 set res_dir=C:\dev\projects\Puzzle\resources\dll
 
+if "%1" == "-copy" (
+	echo Skip update
+	shift
+	goto:copy
+)	
+
+:update
 :: This also updates SFML as well.
 call %tgui_dir%\updateTGUI.cmd
+
+:copy
 
 copy %sfml_dir%\lib\sfml-system-d-2.dll %res_dir%\debug
 copy %sfml_dir%\lib\sfml-graphics-d-2.dll %res_dir%\debug

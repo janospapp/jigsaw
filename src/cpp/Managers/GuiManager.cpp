@@ -1,5 +1,8 @@
 #include "GameCore/GameApp.hpp"
+#include "GameCore/GameState.hpp"
+#include "Managers/FileManager.hpp"
 #include "Managers/GuiManager.hpp"
+#include "Managers/PuzzleManager.hpp"
 #include "Managers/WindowManager.hpp"
 #include "Utils/Debug.hpp"
 #include "Utils/Helper.hpp"
@@ -9,23 +12,33 @@
 
 namespace GuiManager
 {
-    // Load the given gui and put it into the map.
-    bool loadGui(const U8 id_);
-
     static std::map<U8,std::unique_ptr<tgui::Gui>> _guiMap;
-    static U8 _activeGui = 0;
+    static tgui::Theme::Ptr _theme;
+    static U8 _activeGui = NOGUI;
+    static bool isMsgBox = false;
+
+    void init()
+    {
+        _theme = std::make_shared<tgui::Theme>("Gui/Black.txt");
+    }
 
     bool handleEvent(sf::Event &evt_)
     {
+        bool ret = false;
         auto gui = _guiMap.find(_activeGui);
-        if(_activeGui == 0 || gui == _guiMap.end())
+        if(_activeGui != NOGUI && gui != _guiMap.end())
         {
-            return false;
+            // There's an active gui so try to handle the event
+            ret = (*gui).second->handleEvent(evt_);
+
+            if(isMsgBox)
+            {
+                // If a message box is shown then don't let the event further (means background is irresponsive)
+                // This means there's no other game logic processed till the gui is open.
+                ret = true;
+            }
         }
-        else
-        {
-            return (*gui).second->handleEvent(evt_);
-        }
+        return ret;
     }
 
 
@@ -38,18 +51,10 @@ namespace GuiManager
         }
 
         auto gui = _guiMap.find(id_);
-        if(gui == _guiMap.end() && id_ != 0)
-        {   // We need to load the gui. If it's 0, then it's not in the map, but we just
-            // disable all guis.
-            if(loadGui(id_))
-            {
-                _activeGui = id_;
-                return true;
-            }
-            else
-            {   // Loading failed.
-                return false;
-            }
+        if(gui == _guiMap.end() && id_ != NOGUI)
+        {
+            // The gui haven't been added yet.
+            return false;
         }
         else
         {
@@ -61,7 +66,7 @@ namespace GuiManager
 
     void render()
     {
-        if(_activeGui != 0)
+        if(_activeGui != NOGUI)
         {
             auto current = _guiMap.find(_activeGui);
             if(current != _guiMap.end())
@@ -76,37 +81,74 @@ namespace GuiManager
     }
 
 
-    bool loadGui(const U8 id_)
+    void addGui(const U8 id_, std::unique_ptr<tgui::Gui> gui_)
     {
-        std::unique_ptr<tgui::Gui> gui = std::move(WindowManager::createGui());
-        gui->setGlobalFont("Fonts/arial.ttf");
-
-        switch(id_)
+        auto it = _guiMap.find(id_);
+        if(it == _guiMap.end())
         {
-        case 1:
+            _guiMap.insert(std::make_pair(id_, std::move(gui_)));
+        }
+    }
+
+    void removeGui(const U8 id_)
+    {
+        _guiMap.erase(id_);
+    }
+
+    tgui::Gui* getActiveGui()
+    {
+        auto gui = _guiMap.find(_activeGui);
+        return gui->second.get();
+    }
+
+    void msgBoxHandler(const std::vector<std::string> &labels,const std::vector<std::function<void()>> &fns,
+                       tgui::Gui *gui,tgui::MessageBox::Ptr msgBox, const sf::String &btn)
+    {
+        for(int i=0; i<labels.size(); ++i)
         {
-            tgui::Button::Ptr start = tgui::Button::create("Gui/Black.conf");
-            start->setPosition(150.0f, 75.0f);
-            start->setSize(270.0f, 50.0f);
-            start->connect("pressed",[](){GameApp::PushState(2);});
-            start->setText("Start");
-
-            tgui::Button::Ptr exit = tgui::Button::create("Gui/Black.conf");
-            exit->setPosition(150.0f, 175.0f);
-            exit->setSize(270.0f, 50.0f);
-            exit->connect("pressed",[](){GameApp::Exit();});
-            exit->setText("Exit");
-
-            gui->add(start);
-            gui->add(exit);
-        }
-            break;
-        default:
-            debugPrint(std::string("Loading gui with id ") + intToStr(id_) + std::string(" failed."));
-            return false;
+            if(labels[i] == btn.toAnsiString() && i < fns.size())
+            {
+                // Call the respective handler function
+                fns[i]();
+            }
         }
 
-        _guiMap.insert(std::make_pair(id_, std::move(gui)));
-        return true;
+        // Always hide the msgBox after it was clicked
+        gui->remove(msgBox);
+        isMsgBox = false;
+    }
+
+    void addMsgBox(const std::vector<std::string> &labels,const std::vector<std::function<void()>> &fns,
+                   std::string &&msg,tgui::Gui *gui)
+    {
+        tgui::MessageBox::Ptr msgB = _theme->load("MessageBox");
+        msgB->setText(sf::String(msg));
+        for(auto &str: labels)
+        {
+            msgB->addButton((sf::String(str)));
+        }
+        msgB->connect("ButtonPressed",msgBoxHandler,labels,fns,gui,msgB);
+        msgB->setTextSize(24);
+
+        sf::Vector2f size = msgB->getSize();
+        msgB->setPosition((GameApp::Options.iScreenWidth-size.x)/2.0f,(GameApp::Options.iScreenHeight-size.y)/2.0f);
+
+        gui->add(msgB,"messageBox");
+        isMsgBox = true;
+    }
+
+    void removeMsgBox()
+    {
+        tgui::Gui *gui = getActiveGui();
+        if(gui != nullptr)
+        {
+            gui->remove(gui->get("messageBox"));
+        }
+        isMsgBox = false;
+    }
+
+    tgui::Theme *getTheme()
+    {
+        return _theme.get();
     }
 }

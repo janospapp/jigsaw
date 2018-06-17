@@ -10,24 +10,21 @@ class PieceBorder
 {
 public:
 	PieceBorder();
-    PieceBorder(const std::vector<Edge*> &edges_,const sf::IntRect &textureRect_,const sf::Vector2f &spritePos_);
+    PieceBorder(const std::vector<Edge*> &edges_);
     PieceBorder(PieceBorder &&rhs_);
     PieceBorder& operator=(PieceBorder &&rhs_);
 
     void move(const sf::Vector2f &offset_);
     void rotateRight(const sf::Vector2f &around_);
     bool isInside(const sf::Vector2f &pt_) const;
+    const Edge* getEdge(const U8 index_) const;
 
-    void render(sf::RenderTarget &screen_, const sf::Color &color_) const;
+    void render(SpriteBatch &spBatch_, const sf::Color &color_, const std::vector<U8> &edgeIndex_ = {0, 1, 2, 3}) const;
 
-    static void setColorTextures(const std::vector<std::pair<sf::Color,sf::Texture *>> &&textures_);
-    static void clearColorTextures();
+    void writeOut(std::ostream &os_) const;
+    static PieceBorder readIn(std::istream &is_);
 private:
-	std::vector<std::unique_ptr<Edge>> _edges;
-    static std::vector<std::pair<sf::Color,sf::Texture *>> _borderTextures;
-    sf::IntRect _textureRect;
-    sf::Sprite _borderSprite;
-    sf::Color _currentColor;
+    std::vector<std::unique_ptr<Edge>> _edges;
 };
 
 #endif

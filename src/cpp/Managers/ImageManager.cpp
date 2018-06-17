@@ -7,8 +7,6 @@ namespace ImageManager
 {
     static std::map<U32,std::pair<std::unique_ptr<sf::Image>,std::unique_ptr<sf::Texture>>> _mapImages;
 
-    sf::Image* loadImage(const std::string &path, U32 hash);
-
     //I applied the FNV hash
     U32 Hash(const char *str)
     {
@@ -62,15 +60,31 @@ namespace ImageManager
     //This function loads an image (if it's not loaded yet), and returns the texture pointer.
     //The 'path' is the file location and name relative to the Graphics folder. I store this path's hash
     //value to identify the textures.
-    sf::Texture* getTexture(const std::string &path)
+    sf::Texture* getTexture(const std::string &path_)
     {
-        U32 hash = Hash(path.c_str());
+        sf::Texture *ret = nullptr;
+        sf::Image *img = nullptr;
+        U32 hash = Hash(path_.c_str());
         auto it = _mapImages.find(hash);
         if(it == _mapImages.end())
-        {	//The image isn't loaded yet.
-            if(loadImage(path,hash))
+        {
+            img = loadImage(path_);
+            addImage(path_,img);
+        }
+        else
+        {
+            img = it->second.first.get();
+            ret = it->second.second.get();
+        }
+
+        if(ret == nullptr)
+        {
+            ret=new sf::Texture();
+            if(img != nullptr && ret->loadFromImage(*img))
             {
-                return _mapImages[hash].second.get();
+                auto it2 = _mapImages.find(hash);
+                it2->second.second = std::move(std::unique_ptr<sf::Texture>(ret));
+                return ret;
             }
             else
             {
@@ -79,23 +93,7 @@ namespace ImageManager
         }
         else
         {
-            sf::Texture *ret=it->second.second.get();
-            if(ret==nullptr)
-            {
-                ret=new sf::Texture();
-                if(ret->loadFromImage(*it->second.first.get()))
-                {
-                    return ret;
-                }
-                else
-                {
-                    return nullptr;
-                }
-            }
-            else
-            {
-                return ret;
-            }
+            return ret;
         }
     }
 
@@ -116,9 +114,9 @@ namespace ImageManager
         if(it == _mapImages.end())
         {	//The image isn't loaded yet.
             sf::Image *img;
-            if(img=loadImage(path,hash))
+            if(img = loadImage(path))
             {
-                //This is only for debug reasons. TO DO: remove it from the release code!
+                addImage(path,img);
                 return img;
             }
             else
@@ -181,55 +179,50 @@ namespace ImageManager
     }
 
 
-    void saveImage(const std::string &path)
+    void saveImage(const std::string &path_)
     {
-        U32 hash=Hash(path.c_str());
-        std::map<U32,std::pair<std::unique_ptr<sf::Image>,std::unique_ptr<sf::Texture>>>::const_iterator it=_mapImages.find(hash);
+        U32 hash=Hash(path_.c_str());
+        auto it=_mapImages.find(hash);
         if(it != _mapImages.end())
         {
-            std::string str("Graphics/");
-            str += path;
-            it->second.first->saveToFile(str);
+            it->second.first->saveToFile(path_);
         }
     }
 
 
-    sf::Image* loadImage(const std::string &path, U32 hash)
+    sf::Image* loadImage(const std::string &path_)
     {
         sf::Image *img=new sf::Image();
-        std::string str("Graphics/");
-        str += path;
-        if(!img->loadFromFile(str))
+        if(!img->loadFromFile(path_))
         {
-
-    #ifdef _DEBUG
-            //I check if the loading went well.
-            std::string debugStr = std::string("Error while loading image from file: ")+str;
-            DebugPrint(std::move(debugStr));
-    #endif
-
-            return nullptr;
+            img = nullptr;
         }
-        else
-        {	//I add the image to the map.
-            sf::Texture *tex=new sf::Texture();
-            if(tex->loadFromImage(*img))
-            {
-                _mapImages.insert(std::pair<U32,std::pair<std::unique_ptr<sf::Image>,std::unique_ptr<sf::Texture>>>
-                                    (hash,std::pair<std::unique_ptr<sf::Image>,std::unique_ptr<sf::Texture>>(std::unique_ptr<sf::Image>(img),
-                                                                                                             std::unique_ptr<sf::Texture>(tex))));
-                return img;
-            }
-            else
-            {
 
-    #ifdef _DEBUG
-                std::string debugStr = std::string("Error while loading texture from image: ")+str;
-                DebugPrint(std::move(debugStr));
-    #endif
-
-                return nullptr;
-            }
-        }
+        return img;
     }
+
+    sf::Image* scaleImage(const sf::Image &origImg_, const float scaleFactor_)
+    {
+        sf::Image *newImg = new sf::Image();
+        sf::Vector2u origSize(origImg_.getSize());
+        sf::Vector2u newSize(scaleFactor_*origSize.x,scaleFactor_*origSize.y);
+        newImg->create(newSize.x, newSize.y);
+
+        for(U16 i=0; i < newSize.x; ++i)
+        {
+            for(U16 j=0; j < newSize.y; ++j)
+            {
+                newImg->setPixel(i,j,origImg_.getPixel(i/scaleFactor_,j/scaleFactor_));
+            }
+        }
+
+        return newImg;
+    }
+
+    void removeTexture(const std::string &name_)
+    {
+        U32 hash = Hash(name_.c_str());
+        _mapImages.erase(hash);
+    }
+
 }

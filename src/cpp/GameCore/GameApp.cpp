@@ -8,37 +8,15 @@
 #include "Managers/GuiManager.hpp"
 #include <Windows.h>
 
-int TO::mapTileX;
-int TO::mapTileY;
 int TO::frameTime;
 int TO::maxRenderSkip;
-std::string TO::pictureToSolve;
-float TO::pieceSize;
-
 
 void TO::load()
 {
     INIParser ini("Temp.ini");
-    mapTileX = ini.findValue<int>("Map", "TileX");
-    mapTileY = ini.findValue<int>("Map", "TileY");
     frameTime = ini.findValue<int>("Game", "frameTime");
     maxRenderSkip = ini.findValue<int>("Game", "maxRenderSkip");
-    pictureToSolve = ini.findValue<std::string>("Game", "picture");
-    pieceSize = ini.findValue<float>("Game", "pieceSize");
 }
-
-
-//sf::Vector2i ConvertScreenCoordToMapCoord(sf::Vector2i coordToConvert)
-//{
-//    sf::Vector2f ret = GameApp::Screen->mapPixelToCoords(coordToConvert, GameApp::g_View);
-//    return sf::Vector2i((int)ret.x/TempOptions.mapTileX, (int)ret.y/TempOptions.mapTileY);
-//}
-//
-//
-//sf::Vector2i ConvertAbsCoordToMapCoord(sf::Vector2i coordToConvert)
-//{
-//    return sf::Vector2i(coordToConvert.x/TempOptions.mapTileX, coordToConvert.y/TempOptions.mapTileY);
-//}
 
 
 void GameApp::s_Options::loadOptions()
@@ -48,7 +26,9 @@ void GameApp::s_Options::loadOptions()
     iScreenWidth = ip.findValue<int>("Screen", "Width");
     iScreenHeight = ip.findValue<int>("Screen", "Height");
     fScrollSpeed = ip.findValue<float>("Game", "ScrollSpeed");
-    _showBorder = ip.findValue<int>("Game", "ShowPieceBorder") == 1;
+    _defaultDirectory = ip.findValue<std::string>("Game", "DefaultDir");
+    int borderMode = ip.findValue<int>("Game", "ShowPieceBorder");
+    _showBorder = static_cast<BorderRenderingMode>(borderMode);
     fScaleX = iScreenWidth/1366.f;
     fScaleY = iScreenHeight/768.f;
 }
@@ -61,27 +41,26 @@ void GameApp::s_Options::saveOptions()
 
 	fout << "[Screen]" << std::endl << std::endl << "Width=" << iScreenWidth  << std::endl;
 	fout << "Height=" << iScreenHeight << std::endl << std::endl;
-	fout << "[Game]" << std::endl << std::endl << "ScrollSpeed=" << fScrollSpeed << std::endl;
-    fout << "ShowPieceBorder=" << (_showBorder ? 1 : 0) << std::endl;
+    fout << "[Game]" << std::endl << std::endl << "ScrollSpeed=" << fScrollSpeed;
+    fout << "DefaultDir=" << _defaultDirectory << std::endl;
+    fout << "ShowPieceBorder=" << _showBorder << std::endl;
 
 	fout.close();
 }
 
 
-void GameApp::InitializeGame()
+void GameApp::initializeGame()
 {
 	//Load the options, and the menus from files.
     Options.loadOptions();
     TempOptions.load();
-
-	//Initialize random number generator.
-	Random::initialize();
 
 	//Create the game window, and set the view properly.
 	WindowManager::initializeScreen();
 	
 	//Create a new GameClock.
 	m_pClock = new GameClock();
+    GuiManager::init();
     PushState(new MainMenuState());
 
     m_pStateForDelete = nullptr;
@@ -95,11 +74,11 @@ void GameApp::Gameloop()
 		m_bStateChanged = false;
 
 		m_pClock->Reset();
-		m_StateStack.top()->Events();	//This is the first function where the state can change, so I don't need to check it before the call.
+        m_StateStack.top()->events();	//This is the first function where the state can change, so I don't need to check it before the call.
 		
         if(!m_bStateChanged)
         {
-			m_StateStack.top()->Input();
+            m_StateStack.top()->input();
 		}
 
         if(!m_bStateChanged)
@@ -109,30 +88,32 @@ void GameApp::Gameloop()
         if(time > TempOptions.frameTime)
         {
 			//If I stopped at a breakpoint, then I measure a very large updatetime, so I make it correct here.
-            m_StateStack.top()->Update(TempOptions.frameTime);
+            m_StateStack.top()->update(TempOptions.frameTime);
         }
         else
         {
-            m_StateStack.top()->Update(time);
+            m_StateStack.top()->update(time);
 		}
 #else
-        m_StateStack.top()->Update(m_pClock->GetUpdateTime());
+        m_StateStack.top()->update(m_pClock->GetUpdateTime());
 #endif
 		}
 
         if(m_pClock->CanRender() && !m_bStateChanged)
         {
 			WindowManager::beginRender();
-			m_StateStack.top()->Render();
+            m_StateStack.top()->render();
             GuiManager::render();
 			WindowManager::endRender();
 		}
 
-		int milliSecRemained = m_pClock->GetRemainTime();
+        /*
+        int milliSecRemained = m_pClock->GetRemainTime();
         if(!m_bStateChanged && milliSecRemained > 0)
         {
-            m_StateStack.top()->RemainTime(milliSecRemained);
+            m_StateStack.top()->remainTime(milliSecRemained);
 		}
+        */
 
         if(m_pStateForDelete != nullptr)
         {
@@ -158,7 +139,7 @@ GameState* GameApp::GetState()
 
 void GameApp::PushState(GameState *state)
 {
-    if(state != nullptr && state->Init())
+    if(state != nullptr && state->init())
     {
         m_StateStack.push(state);
 		m_bStateChanged = true;
@@ -175,6 +156,9 @@ void GameApp::PushState(const U8 id_)
         newState = new MainMenuState();
         break;
     case 2:
+        newState = new GameSetupState("");
+        break;
+    case 3:
         newState = new GamePlayState();
         break;
     }
@@ -189,6 +173,10 @@ void GameApp::PopState()
     {
 		m_pStateForDelete = m_StateStack.top();
 		m_StateStack.pop();
+        if(!m_StateStack.empty())
+        {
+            m_StateStack.top()->restore();
+        }
 	}
 
 	m_bStateChanged = true;
@@ -203,8 +191,6 @@ void GameApp::Exit()
 		delete m_pStateForDelete;
         m_pStateForDelete = nullptr;
 	}
-
-	//CleanUp(); The main menu state is always at the bottom of the stack, and its destroy will call CleanUp.
 }
 
 
